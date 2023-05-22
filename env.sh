@@ -21,7 +21,7 @@ action() {
     export ANALYSIS_PATH="$this_dir"
     export ANALYSIS_DATA_PATH="$ANALYSIS_PATH/data"
     export X509_USER_PROXY="$ANALYSIS_DATA_PATH/voms.proxy"
-    export CENTRAL_STORAGE="/eos/home-v/vdamante/HH_bbtautau_resonant_Run2"
+    export CENTRAL_STORAGE="/nfs/dust/cms/user/paaschal/WorkingArea/Analysis/MTopJet/Outdir1"
     export ANALYSIS_BIG_DATA_PATH="$CENTRAL_STORAGE/tmp/$(whoami)/data"
     export PATH=$PATH:$HOME/.local/bin:$ANALYSIS_PATH/scripts
 
