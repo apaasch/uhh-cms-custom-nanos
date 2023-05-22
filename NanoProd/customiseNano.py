@@ -296,3 +296,31 @@ def customise_pnet(process):
     process.schedule = cms.Schedule(process.edPath,process.nanoAOD_step,process.endjob_step,process.NANOAODSIMoutput_step)
 
     return process
+
+def customise_xcone(process):
+    process.edTask = cms.Task()
+    usePseudoXCone = cms.bool(True)
+    print("Before producer <-----------------------------------")
+    process.xconeCHS = cms.EDProducer("XConeProducer",
+      src=cms.InputTag("chs"),
+      usePseudoXCone=usePseudoXCone,  # use PseudoXCone (faster) or XCone
+      NJets = cms.uint32(2),          # number of fatjets
+      RJets = cms.double(1.2),        # cone radius of fatjets
+      BetaJets = cms.double(2.0),     # conical mesure (beta = 2.0 is XCone default)
+      NSubJets = cms.uint32(3),       # number of subjets in each fatjet
+      RSubJets = cms.double(0.4),     # cone radius of subjetSrc
+      BetaSubJets = cms.double(2.0)   # conical mesure for subjets
+    )
+    print("Now adding <-----------------------------------")
+    process.edTask.add(getattr(process,"xconeCHS"))
+
+    # XCone_sources=cms.VInputTag(
+    #   cms.InputTag("xconeCHS"),
+    # )
+
+    print("Before Path <-----------------------------------")
+    process.edPath = cms.Path(process.edTask)
+    print("Before schedule <-----------------------------------")
+    process.schedule = cms.Schedule(process.edPath,process.nanoAOD_step,process.endjob_step,process.NANOAODSIMoutput_step)
+ 
+    return process
