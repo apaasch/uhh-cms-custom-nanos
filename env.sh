@@ -73,6 +73,8 @@ action() {
         run_cmd ln -s "$this_dir/NanoProd" Framework/NanoProd/python
         run_cmd mkdir -p HHTools
         run_cmd ln -s "$this_dir/HHbtag" HHTools/HHbtag
+        run_cmd mkdir -p XCone
+        run_cmd ln -s "$this_dir/XCone" XCone
         run_cmd scram b -j8
         # workaround for CMSSW - CRAB compatibility
         # since recently, "scram b" does not link files into the python directory any longer and
