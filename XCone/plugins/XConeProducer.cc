@@ -16,7 +16,6 @@
 //
 //
 
-
 // system include files
 #include <memory>
 
@@ -388,7 +387,7 @@ pat::Jet XConeProducer::createPatJet(const PseudoJet & fjJet, const edm::EventSe
     // specific allocator.
     reco::Particle::LorentzVector jet4v = reco::Particle::LorentzVector(fjJet.px(), fjJet.py(), fjJet.pz(),fjJet.E());
     reco::PFJet pfjet;
-    reco::writeSpecific(pfjet,jet4v,vertex_,constituents, iSetup);// https://github.com/ahlinist/cmssw/blob/master/RecoJets/JetProducers/src/JetSpecific.cc#L91
+    reco::writeSpecific(pfjet,jet4v,vertex_,constituents);// https://github.com/cms-sw/cmssw/blob/012956d4c9c1500ac605b5b070fcd6b808341714/RecoJets/JetProducers/src/JetSpecific.cc#L68
     patjet = pat::Jet(pfjet);
 
   }
@@ -440,3 +439,5 @@ pat::Jet XConeProducer::rekeyJet(const pat::Jet & jet, edm::Handle<edm::View<rec
 
 //define this as a plug-in
 DEFINE_FWK_MODULE(XConeProducer);
+// #include "FWCore/PluginManager/interface/PluginFactory.h"
+// EDM_REGISTER_PLUGINFACTORY(XConeProducer,"XConeProducer");
