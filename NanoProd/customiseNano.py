@@ -299,6 +299,11 @@ def customise_pnet(process):
 
 def customise_xcone(process):
     process.edTask = cms.Task()
+    process.chs = cms.EDFilter("CandPtrSelector",
+        src=cms.InputTag("packedPFCandidates"),
+        cut=cms.string("fromPV(0) > 0")
+    )
+    process.edTask.add(getattr(process,"chs"))
     usePseudoXCone = cms.bool(True)
     print("Before producer <-----------------------------------")
     process.xconeCHS = cms.EDProducer("XConeProducer",
