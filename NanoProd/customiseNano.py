@@ -4,6 +4,7 @@ from PhysicsTools.NanoAOD.common_cff import Var
 from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
 from RecoBTag.ONNXRuntime.pfParticleNetAK4_cff import _pfParticleNetAK4JetTagsAll
 from PhysicsTools.NanoAOD.custom_jme_cff import AddParticleNetAK4Scores
+from PhysicsTools.NanoAOD.common_cff import *
 
 def nanoAOD_addDeepInfoAK4CHS(process, addDeepBTag, addDeepFlavour, addParticleNet):
   _btagDiscriminators=[]
@@ -299,13 +300,15 @@ def customise_pnet(process):
 
 def customise_xcone(process):
     process.edTask = cms.Task()
+    process.MessageLogger.cerr.FwkReport.reportEvery = 1
+
     process.chs = cms.EDFilter("CandPtrSelector",
         src=cms.InputTag("packedPFCandidates"),
         cut=cms.string("fromPV(0) > 0")
     )
-    process.edTask.add(getattr(process,"chs"))
+    process.edTask.add(process.chs)
+
     usePseudoXCone = cms.bool(True)
-    print("Before producer <-----------------------------------")
     process.xconeCHS = cms.EDProducer("XConeProducer",
       src=cms.InputTag("chs"),
       usePseudoXCone=usePseudoXCone,  # use PseudoXCone (faster) or XCone
@@ -316,16 +319,67 @@ def customise_xcone(process):
       RSubJets = cms.double(0.4),     # cone radius of subjetSrc
       BetaSubJets = cms.double(2.0)   # conical mesure for subjets
     )
-    print("Now adding <-----------------------------------")
     process.edTask.add(getattr(process,"xconeCHS"))
 
-    # XCone_sources=cms.VInputTag(
-    #   cms.InputTag("xconeCHS"),
-    # )
+    process.XConeJetTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
+      src = cms.InputTag("xconeCHS"),
+      cut = cms.string(" pt > 30"), #probably already applied in miniaod
+      name = cms.string("xconeCHS"),
+      # doc  = cms.string(" "),  #slimmedJetsAK8, i.e. ak8 fat jets for boosted analysis
+      singleton = cms.bool(False), # the number of entries is variable
+      extension = cms.bool(False), # this is the main table for the jets
+      variables = cms.PSet(P4Vars,
+          area = Var("jetArea()", float, doc="jet catchment area, for JECs",precision=10),
+          nConstituents = Var("numberOfDaughters()","uint8",doc="Number of particles in the jet"),
+          rawFactor = Var("1.",float,doc="1 - Factor to get back to raw pT",precision=6),
+          chHEF = Var("chargedHadronEnergyFraction()", float, doc="charged Hadron Energy Fraction", precision= 6),
+          neHEF = Var("neutralHadronEnergyFraction()", float, doc="neutral Hadron Energy Fraction", precision= 6),
+          chEmEF = Var("chargedEmEnergyFraction()", float, doc="charged Electromagnetic Energy Fraction", precision= 6),
+          neEmEF = Var("neutralEmEnergyFraction()", float, doc="neutral Electromagnetic Energy Fraction", precision= 6),
+          muEF = Var("muonEnergyFraction()", float, doc="muon Energy Fraction", precision= 6),
+          btagDeepB = Var("?(bDiscriminator('pfDeepCSVJetTags:probb')+bDiscriminator('pfDeepCSVJetTags:probbb'))>=0?bDiscriminator('pfDeepCSVJetTags:probb')+bDiscriminator('pfDeepCSVJetTags:probbb'):-1",float,doc="DeepCSV b+bb tag discriminator",precision=10),
+          btagDeepFlavB = Var("bDiscriminator('pfDeepFlavourJetTags:probb')+bDiscriminator('pfDeepFlavourJetTags:probbb')+bDiscriminator('pfDeepFlavourJetTags:problepb')",float,doc="DeepJet b+bb+lepb tag discriminator",precision=10),
+          subJetIdx1 = Var("?nSubjetCollections()>0 && subjets().size()>0?subjets()[0].key():-1", int, doc="index of first subjet"),
+          subJetIdx2 = Var("?nSubjetCollections()>0 && subjets().size()>1?subjets()[1].key():-1", int, doc="index of second subjet"),
+          subJetIdx3 = Var("?nSubjetCollections()>0 && subjets().size()>2?subjets()[2].key():-1", int, doc="index of third subjet"),
+          # msoftdrop = Var("groomedMass('softdropmass')",float, doc="Corrected soft drop mass with CHS",precision=10),
+      ),
+    )
 
-    print("Before Path <-----------------------------------")
-    process.edPath = cms.Path(process.edTask)
-    print("Before schedule <-----------------------------------")
+    process.XConeSubJetTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
+      src = cms.InputTag("xconeCHS","SubJets"),
+      cut = cms.string(""), #probably already applied in miniaod
+      name = cms.string("XConeCHSsubjet"),
+      # doc  = cms.string("slimmedJetsAK8, i.e. ak8 fat jets for boosted analysis"),
+      singleton = cms.bool(False), # the number of entries is variable
+      extension = cms.bool(False), # this is the main table for the jets
+      variables = cms.PSet(P4Vars,
+          area = Var("jetArea()", float, doc="jet catchment area, for JECs",precision=10),
+          nConstituents = Var("numberOfDaughters()","uint8",doc="Number of particles in the jet"),
+          rawFactor = Var("1.",float,doc="1 - Factor to get back to raw pT",precision=6),
+          chHEF = Var("chargedHadronEnergyFraction()", float, doc="charged Hadron Energy Fraction", precision= 6),
+          neHEF = Var("neutralHadronEnergyFraction()", float, doc="neutral Hadron Energy Fraction", precision= 6),
+          chEmEF = Var("chargedEmEnergyFraction()", float, doc="charged Electromagnetic Energy Fraction", precision= 6),
+          neEmEF = Var("neutralEmEnergyFraction()", float, doc="neutral Electromagnetic Energy Fraction", precision= 6),
+          muEF = Var("muonEnergyFraction()", float, doc="muon Energy Fraction", precision= 6),
+      )
+    )
+
+
+    XConeSequence = cms.Sequence(process.chs + process.xconeCHS)
+    XConeJetTables = cms.Sequence(process.XConeJetTable + process.XConeSubJetTable)
+    # XConeJetMC = cms.Sequence(hotvrJetMCTable+hotvrSubJetMCTable+packedGenParticlesForJetsNoNu+hotvrGenJets+hotvrGenJetTable+hotvrSubGenJetTable)
+
+    process.edTask.add(getattr(process,"updatedPatJetsAK8WithDeepInfo"))
+    process.edTask.add(getattr(process,"selectedUpdatedPatJetsAK8WithDeepInfo"))
+    process.edTask.add(getattr(process,"updatedPatJetsTransientCorrectedAK8WithDeepInfo"))
+    process.edTask.add(getattr(process,"patJetCorrFactorsTransientCorrectedAK8WithDeepInfo"))
+    process.edTask.add(getattr(process,"pfParticleNetTagInfosAK8WithDeepInfo"))
+    process.edTask.add(getattr(process,"pfParticleNetMassRegressionJetTagsAK8WithDeepInfo"))
+    process.edTask.add(getattr(process,"patJetCorrFactorsAK8WithDeepInfo"))
+
+    # Adding xcone to task does not start clustering: process.edPath = cms.Path(process.edTask)
+    process.edPath = cms.Path(XConeSequence + XConeJetTables, process.edTask)
     process.schedule = cms.Schedule(process.edPath,process.nanoAOD_step,process.endjob_step,process.NANOAODSIMoutput_step)
  
     return process
