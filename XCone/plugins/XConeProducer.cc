@@ -116,13 +116,11 @@ XConeProducer::XConeProducer(const edm::ParameterSet& iConfig):
   doRekey_(iConfig.exists("doRekey") ? iConfig.getParameter<bool>("doRekey") : false)
 {
   // We make both the fat jets and subjets, and we must store them as separate collections
-  std::cout << "In Producer < ------------------------------ " << std::endl;
   std::cout << std::setw(3) << doRekey_ << std::setw(3) << RJets_ << std::endl;
   produces<pat::JetCollection>();
   produces<pat::JetCollection>(subjetCollName_);
   input_vertex_token_ = consumes<reco::VertexCollection>(edm::InputTag("offlineSlimmedPrimaryVertices"));
   if (doRekey_) {
-    std::cout << "If < ------------------------------ " << std::endl;
     // Add option to rekey fatjets & their subjets, i.e. make their duaghters point to the equivalent
     // particle in another collection (the one specified by rekeyCandidateSrc)
     // This is useful if you want to e.g. replace the PUPPI daughters with their packedPFCandidate equivalents
@@ -153,7 +151,6 @@ XConeProducer::~XConeProducer()
 void
 XConeProducer::initPlugin(std::unique_ptr<NjettinessPlugin> & ptr, int N, double R0, double beta, bool usePseudoXCone) const
 {
-  std::cout << "In init < ------------------------------ " << std::endl;
   if (usePseudoXCone) {
     ptr.reset(new PseudoXConePlugin(N, R0, beta));
   } else {
@@ -165,7 +162,6 @@ XConeProducer::initPlugin(std::unique_ptr<NjettinessPlugin> & ptr, int N, double
 // ------------ method called to produce the data  ------------
 void XConeProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
-  std::cout << "In event produce < ------------------------------ " << std::endl;
   //  cout<<"--- START event --- "<<endl;
   // Set the fastjet random seed to a deterministic function
   // of the run/lumi/event.
